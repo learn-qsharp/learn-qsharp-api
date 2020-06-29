@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"os"
 )
 
@@ -18,5 +19,14 @@ func SetupDB() (*gorm.DB, error) {
 	args := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s", host, port, name, user, password, sslmode)
 
 	db, err := gorm.Open("postgres", args)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.AutoMigrate(&models.Tutorial{}).Error
+	if err != nil {
+		return nil, err
+	}
+
 	return db, err
 }
