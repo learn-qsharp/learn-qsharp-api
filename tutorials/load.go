@@ -1,13 +1,22 @@
 package tutorials
 
 import (
+	"bytes"
 	"context"
 	"github.com/google/go-github/v32/github"
+	"gopkg.in/yaml.v2"
 	"io"
 	"log"
 	"os"
 	"strings"
 )
+
+type metadata struct {
+	Title      string
+	Author     string
+	Difficulty string
+	Tags       []string
+}
 
 func Load(client *github.Client, ctx context.Context) error {
 	ids, err := getTutorialIDs(client, ctx)
@@ -21,7 +30,13 @@ func Load(client *github.Client, ctx context.Context) error {
 			return err
 		}
 
+		metadata, err := getTutorialMetadata(id, client, ctx)
+		if err != nil {
+			return err
+		}
+
 		log.Println(description)
+		log.Println(metadata)
 	}
 
 	return nil
@@ -67,4 +82,32 @@ func getTutorialDescription(id string, client *github.Client, ctx context.Contex
 	}
 
 	return buf.String(), nil
+}
+
+func getTutorialMetadata(id string, client *github.Client, ctx context.Context) (*metadata, error) {
+	opts := github.RepositoryContentGetOptions{Ref: "master"}
+	r, err := client.Repositories.DownloadContents(
+		ctx,
+		os.Getenv("GITHUB_TUTORIALS_OWNER"),
+		os.Getenv("GITHUB_TUTORIALS_REPO"),
+		"tutorials/"+id+"/metadata.yaml",
+		&opts,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	buf := bytes.Buffer{}
+	_, err = io.Copy(&buf, r)
+	if err != nil {
+		return nil, err
+	}
+
+	metadata := metadata{}
+	err = yaml.Unmarshal(buf.Bytes(), &metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	return &metadata, nil
 }
