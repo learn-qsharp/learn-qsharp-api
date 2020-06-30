@@ -3,11 +3,15 @@ package tutorials
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"github.com/google/go-github/v32/github"
+	"github.com/jinzhu/gorm"
+	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"gopkg.in/yaml.v2"
 	"io"
-	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -18,31 +22,42 @@ type metadata struct {
 	Tags       []string
 }
 
-func Load(client *github.Client, ctx context.Context) error {
+func Load(db *gorm.DB, client *github.Client, ctx context.Context) error {
 	ids, err := getTutorialIDs(client, ctx)
 	if err != nil {
 		return err
 	}
 
+	tx := db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 	for _, id := range ids {
-		description, err := getTutorialDescription(id, client, ctx)
+		description, err := getTutorialDescription(client, ctx, id)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
-		metadata, err := getTutorialMetadata(id, client, ctx)
+		metadata, err := getTutorialMetadata(client, ctx, id)
 		if err != nil {
+			tx.Rollback()
 			return err
 		}
 
-		log.Println(description)
-		log.Println(metadata)
+		err = saveToDatabase(tx, id, description, metadata)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
-	return nil
+	return tx.Commit().Error
 }
 
-func getTutorialIDs(client *github.Client, ctx context.Context) ([]string, error) {
+func getTutorialIDs(client *github.Client, ctx context.Context) ([]uint, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
@@ -54,21 +69,30 @@ func getTutorialIDs(client *github.Client, ctx context.Context) ([]string, error
 		return nil, err
 	}
 
-	ids := make([]string, 0)
+	ids := make([]uint, 0)
 	for _, directory := range directories {
-		ids = append(ids, directory.GetName())
+		id, err := strconv.Atoi(directory.GetName())
+		if err != nil {
+			return nil, err
+		}
+
+		if id <= 0 {
+			return nil, errors.New("id must be positive")
+		}
+
+		ids = append(ids, uint(id))
 	}
 
 	return ids, nil
 }
 
-func getTutorialDescription(id string, client *github.Client, ctx context.Context) (string, error) {
+func getTutorialDescription(client *github.Client, ctx context.Context, id uint) (string, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
 		os.Getenv("GITHUB_TUTORIALS_REPO"),
-		"tutorials/"+id+"/description.md",
+		fmt.Sprintf("tutorials/%d/description.md", id),
 		&opts,
 	)
 	if err != nil {
@@ -84,13 +108,13 @@ func getTutorialDescription(id string, client *github.Client, ctx context.Contex
 	return buf.String(), nil
 }
 
-func getTutorialMetadata(id string, client *github.Client, ctx context.Context) (*metadata, error) {
+func getTutorialMetadata(client *github.Client, ctx context.Context, id uint) (*metadata, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
 		os.Getenv("GITHUB_TUTORIALS_REPO"),
-		"tutorials/"+id+"/metadata.yaml",
+		fmt.Sprintf("tutorials/%d/metadata.yaml", id),
 		&opts,
 	)
 	if err != nil {
@@ -110,4 +134,31 @@ func getTutorialMetadata(id string, client *github.Client, ctx context.Context) 
 	}
 
 	return &metadata, nil
+}
+
+func saveToDatabase(tx *gorm.DB, id uint, description string, metadata *metadata) error {
+	newTutorial := models.Tutorial{
+		Model:       gorm.Model{ID: id},
+		Title:       metadata.Title,
+		Author:      metadata.Author,
+		Description: description,
+		Difficulty:  metadata.Difficulty,
+		Tags:        metadata.Tags,
+	}
+
+	searchTutorial := models.Tutorial{
+		Model: gorm.Model{ID: id},
+	}
+
+	if tx.First(&searchTutorial).RecordNotFound() {
+		if err := tx.Create(&newTutorial).Error; err != nil {
+			return err
+		}
+	} else {
+		if err := tx.Model(&searchTutorial).Updates(&newTutorial).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

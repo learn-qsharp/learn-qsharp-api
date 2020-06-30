@@ -21,7 +21,7 @@ func main() {
 
 	githubClient, githubCtx := github.Setup()
 
-	err = tutorials.Load(githubClient, githubCtx)
+	err = tutorials.Load(dbc, githubClient, githubCtx)
 	if err != nil {
 		log.Fatal(err)
 	}

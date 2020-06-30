@@ -10,6 +10,6 @@ type Tutorial struct {
 	Title       string
 	Author      string
 	Description string
-	Difficulty  int
+	Difficulty  string
 	Tags        pq.StringArray `gorm:"type:varchar(64)[]"`
 }
