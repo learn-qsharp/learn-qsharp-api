@@ -43,7 +43,7 @@ func Load(client *github.Client, ctx context.Context) error {
 }
 
 func getTutorialIDs(client *github.Client, ctx context.Context) ([]string, error) {
-	opts := github.RepositoryContentGetOptions{Ref: "master"}
+	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
@@ -63,7 +63,7 @@ func getTutorialIDs(client *github.Client, ctx context.Context) ([]string, error
 }
 
 func getTutorialDescription(id string, client *github.Client, ctx context.Context) (string, error) {
-	opts := github.RepositoryContentGetOptions{Ref: "master"}
+	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
@@ -85,7 +85,7 @@ func getTutorialDescription(id string, client *github.Client, ctx context.Contex
 }
 
 func getTutorialMetadata(id string, client *github.Client, ctx context.Context) (*metadata, error) {
-	opts := github.RepositoryContentGetOptions{Ref: "master"}
+	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
