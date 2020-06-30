@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
+	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
 )
 
@@ -18,7 +19,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = github.Setup()
+	githubClient, githubCtx := github.Setup()
+
+	tutorials.Load(githubClient, githubCtx)
 
 	defer dbc.Close()
 }
