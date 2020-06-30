@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
+	"github.com/learn-qsharp/learn-qsharp-api/github"
 	"log"
 )
 
@@ -16,6 +17,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	_ = github.Setup()
 
 	defer dbc.Close()
 }
