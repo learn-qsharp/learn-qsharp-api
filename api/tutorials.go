@@ -34,3 +34,15 @@ func ShowTutorial(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tutorial)
 }
+
+func ListTutorials(c *gin.Context) {
+	db := c.MustGet("db").(*gorm.DB)
+
+	tutorials := make([]models.Tutorial, 0)
+	if err := db.Order("id").Find(&tutorials).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, tutorials)
+}

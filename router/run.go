@@ -20,6 +20,7 @@ func Run(db *gorm.DB) error {
 	})
 
 	r.GET("/tutorials/:id", api.ShowTutorial)
+	r.GET("/tutorials", api.ListTutorials)
 
 	return r.Run()
 }
