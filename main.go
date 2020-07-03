@@ -28,7 +28,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = router.Run()
+	err = router.Run(dbc)
 	if err != nil {
 		log.Fatal(err)
 	}
