@@ -5,6 +5,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/learn-qsharp/learn-qsharp-api/models"
+	"github.com/qor/validations"
 	"os"
 )
 
@@ -27,6 +28,8 @@ func SetupDB() (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	validations.RegisterCallbacks(db)
 
 	return db, err
 }

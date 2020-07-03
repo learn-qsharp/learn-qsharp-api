@@ -7,9 +7,9 @@ import (
 
 type Tutorial struct {
 	gorm.Model
-	Title       string
-	Author      string
-	Description string
-	Difficulty  string
+	Title       string         `valid:"required"`
+	Author      string         `valid:"required"`
+	Description string         `valid:"required"`
+	Difficulty  string         `valid:"required,in(easy|medium|hard)"`
 	Tags        pq.StringArray `gorm:"type:varchar(64)[]"`
 }
