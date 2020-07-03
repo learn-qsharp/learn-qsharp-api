@@ -23,7 +23,7 @@ type metadata struct {
 }
 
 func Load(db *gorm.DB, client *github.Client, ctx context.Context) error {
-	ids, err := getTutorialIDs(client, ctx)
+	tutorials, err := loadTutorials(client, ctx)
 	if err != nil {
 		return err
 	}
@@ -34,27 +34,46 @@ func Load(db *gorm.DB, client *github.Client, ctx context.Context) error {
 			tx.Rollback()
 		}
 	}()
+
+	if err = createOrUpdateTutorialsOnDatabase(tx, tutorials); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
+}
+
+func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutorial, error) {
+	ids, err := getTutorialIDs(client, ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var tutorials []models.Tutorial
 	for _, id := range ids {
 		description, err := getTutorialDescription(client, ctx, id)
 		if err != nil {
-			tx.Rollback()
-			return err
+			return nil, err
 		}
 
 		metadata, err := getTutorialMetadata(client, ctx, id)
 		if err != nil {
-			tx.Rollback()
-			return err
+			return nil, err
 		}
 
-		err = saveToDatabase(tx, id, description, metadata)
-		if err != nil {
-			tx.Rollback()
-			return err
+		tutorial := models.Tutorial{
+			Model:       gorm.Model{ID: id},
+			Title:       metadata.Title,
+			Author:      metadata.Author,
+			Description: description,
+			Difficulty:  metadata.Difficulty,
+			Tags:        metadata.Tags,
 		}
+
+		tutorials = append(tutorials, tutorial)
 	}
 
-	return tx.Commit().Error
+	return tutorials, nil
 }
 
 func getTutorialIDs(client *github.Client, ctx context.Context) ([]uint, error) {
@@ -136,28 +155,40 @@ func getTutorialMetadata(client *github.Client, ctx context.Context, id uint) (*
 	return &metadata, nil
 }
 
-func saveToDatabase(tx *gorm.DB, id uint, description string, metadata *metadata) error {
-	newTutorial := models.Tutorial{
-		Model:       gorm.Model{ID: id},
-		Title:       metadata.Title,
-		Author:      metadata.Author,
-		Description: description,
-		Difficulty:  metadata.Difficulty,
-		Tags:        metadata.Tags,
-	}
-
-	searchTutorial := models.Tutorial{
-		Model: gorm.Model{ID: id},
-	}
-
-	if tx.First(&searchTutorial).RecordNotFound() {
-		if err := tx.Create(&newTutorial).Error; err != nil {
+func createOrUpdateTutorialsOnDatabase(tx *gorm.DB, tutorials []models.Tutorial) error {
+	for _, tutorial := range tutorials {
+		if err := createOrUpdateTutorialOnDatabase(tx, &tutorial); err != nil {
 			return err
 		}
-	} else {
-		if err := tx.Model(&searchTutorial).Updates(&newTutorial).Error; err != nil {
+	}
+
+	return nil
+}
+
+func createOrUpdateTutorialOnDatabase(tx *gorm.DB, tutorial *models.Tutorial) error {
+	if tutorial == nil {
+		return errors.New("tutorial can't be nil")
+	}
+
+	searchTutorial := &models.Tutorial{
+		Model: gorm.Model{ID: tutorial.ID},
+	}
+
+	if err := tx.First(searchTutorial).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			if err = tx.Create(tutorial).Error; err != nil {
+				return err
+			}
+
+			return nil
+		} else {
 			return err
 		}
+	}
+
+	// It will update only changed fields.
+	if err := tx.Model(searchTutorial).Updates(tutorial).Error; err != nil {
+		return err
 	}
 
 	return nil
