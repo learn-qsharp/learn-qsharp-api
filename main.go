@@ -4,6 +4,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
+	"github.com/learn-qsharp/learn-qsharp-api/router"
 	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
 )
@@ -18,6 +19,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer dbc.Close()
 
 	githubClient, githubCtx := github.Setup()
 
@@ -26,5 +28,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	defer dbc.Close()
+	err = router.Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
