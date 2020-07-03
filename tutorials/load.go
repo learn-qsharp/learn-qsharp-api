@@ -22,7 +22,7 @@ type metadata struct {
 	Tags       []string
 }
 
-func Load(db *gorm.DB, client *github.Client, ctx context.Context) error {
+func LoadFromGithubAndSaveToDb(db *gorm.DB, client *github.Client, ctx context.Context) error {
 	tutorials, err := loadTutorials(client, ctx)
 	if err != nil {
 		return err
