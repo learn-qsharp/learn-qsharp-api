@@ -14,6 +14,7 @@ type Tutorial struct {
 	Title       string         `json:"title" valid:"required"`
 	Author      string         `json:"author" valid:"required"`
 	Description string         `json:"description" valid:"required"`
+	Body        string         `json:"body" valid:"required"`
 	Difficulty  string         `json:"difficulty" valid:"required,in(easy|medium|hard)"`
 	Tags        pq.StringArray `json:"tags" gorm:"type:varchar(64)[]"`
 }

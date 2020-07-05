@@ -16,10 +16,11 @@ import (
 )
 
 type metadata struct {
-	Title      string
-	Author     string
-	Difficulty string
-	Tags       []string
+	Title       string
+	Author      string
+	Description string
+	Difficulty  string
+	Tags        []string
 }
 
 func LoadFromGithubAndSaveToDb(db *gorm.DB, client *github.Client, ctx context.Context) error {
@@ -51,7 +52,7 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 
 	var tutorials []models.Tutorial
 	for _, id := range ids {
-		description, err := getTutorialDescription(client, ctx, id)
+		body, err := getTutorialBody(client, ctx, id)
 		if err != nil {
 			return nil, err
 		}
@@ -65,7 +66,8 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 			ID:          id,
 			Title:       metadata.Title,
 			Author:      metadata.Author,
-			Description: description,
+			Description: metadata.Description,
+			Body:        body,
 			Difficulty:  metadata.Difficulty,
 			Tags:        metadata.Tags,
 		}
@@ -105,13 +107,13 @@ func getTutorialIDs(client *github.Client, ctx context.Context) ([]uint, error) 
 	return ids, nil
 }
 
-func getTutorialDescription(client *github.Client, ctx context.Context, id uint) (string, error) {
+func getTutorialBody(client *github.Client, ctx context.Context, id uint) (string, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		os.Getenv("GITHUB_TUTORIALS_OWNER"),
 		os.Getenv("GITHUB_TUTORIALS_REPO"),
-		fmt.Sprintf("tutorials/%d/description.md", id),
+		fmt.Sprintf("tutorials/%d/body.md", id),
 		&opts,
 	)
 	if err != nil {
