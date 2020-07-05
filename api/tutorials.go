@@ -16,7 +16,7 @@ func ShowTutorial(c *gin.Context) {
 
 	var path pathStruct
 	if err := c.ShouldBindUri(&path); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
