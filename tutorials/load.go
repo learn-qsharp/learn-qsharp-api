@@ -62,7 +62,7 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 		}
 
 		tutorial := models.Tutorial{
-			Model:       gorm.Model{ID: id},
+			ID:          id,
 			Title:       metadata.Title,
 			Author:      metadata.Author,
 			Description: description,
@@ -171,7 +171,7 @@ func createOrUpdateTutorialOnDatabase(tx *gorm.DB, tutorial *models.Tutorial) er
 	}
 
 	searchTutorial := &models.Tutorial{
-		Model: gorm.Model{ID: tutorial.ID},
+		ID: tutorial.ID,
 	}
 
 	if err := tx.First(searchTutorial).Error; err != nil {
