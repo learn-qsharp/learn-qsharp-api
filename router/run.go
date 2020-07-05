@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/learn-qsharp/learn-qsharp-api/api"
@@ -8,6 +9,7 @@ import (
 
 func Run(db *gorm.DB) error {
 	r := gin.Default()
+	r.Use(cors.Default())
 	r.Use(func(c *gin.Context) {
 		c.Set("db", db)
 		c.Next()
