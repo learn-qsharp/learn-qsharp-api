@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
 	"github.com/learn-qsharp/learn-qsharp-api/models"
+	"github.com/lib/pq"
 	"net/http"
 )
 
@@ -38,8 +39,17 @@ func ShowTutorial(c *gin.Context) {
 func ListTutorials(c *gin.Context) {
 	db := c.MustGet("db").(*gorm.DB)
 
-	tutorials := make([]models.Tutorial, 0)
-	if err := db.Order("id").Find(&tutorials).Error; err != nil {
+	type tutorialLite struct {
+		ID int `json:"id"`
+
+		Title       string         `json:"title"`
+		Description string         `json:"description"`
+		Difficulty  string         `json:"difficulty"`
+		Tags        pq.StringArray `json:"tags"`
+	}
+
+	tutorials := make([]tutorialLite, 0)
+	if err := db.Table("tutorials").Order("id").Scan(&tutorials).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
