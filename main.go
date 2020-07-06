@@ -7,6 +7,7 @@ import (
 	"github.com/learn-qsharp/learn-qsharp-api/router"
 	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
+	"os"
 )
 
 func main() {
@@ -21,11 +22,13 @@ func main() {
 	}
 	defer dbc.Close()
 
-	githubClient, githubCtx := github.Setup()
+	if os.Getenv("GITHUB_IGNORE") != "true" {
+		githubClient, githubCtx := github.Setup()
 
-	err = tutorials.LoadFromGithubAndSaveToDb(dbc, githubClient, githubCtx)
-	if err != nil {
-		log.Fatal(err)
+		err = tutorials.LoadFromGithubAndSaveToDb(dbc, githubClient, githubCtx)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	err = router.Run(dbc)
