@@ -17,7 +17,7 @@ import (
 
 type metadata struct {
 	Title       string
-	Author      string
+	Credits     string
 	Description string
 	Difficulty  string
 	Tags        []string
@@ -65,7 +65,7 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 		tutorial := models.Tutorial{
 			ID:          id,
 			Title:       metadata.Title,
-			Author:      metadata.Author,
+			Credits:     metadata.Credits,
 			Description: metadata.Description,
 			Body:        body,
 			Difficulty:  metadata.Difficulty,
