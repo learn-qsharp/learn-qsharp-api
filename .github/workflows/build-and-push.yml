@@ -12,7 +12,7 @@ jobs:
     steps:
 
       - name: 'Checkout GitHub Action'
-        uses: actions/checkout@${{ github.ref }}
+        uses: actions/checkout@v2
 
       - name: 'Login via Azure CLI'
         uses: azure/login@v1
