@@ -21,7 +21,7 @@ jobs:
 
       - uses: azure/docker-login@v1
         with:
-          login-server: contoso.azurecr.io
+          login-server: learnqsharpapi.azurecr.io
           username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
