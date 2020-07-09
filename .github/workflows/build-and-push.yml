@@ -1,0 +1,34 @@
+name: Build and Push
+
+on:
+  push:
+    branches: [master, staging]
+  pull_request:
+    branches: [master, staging]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@${{ github.ref }}
+
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - uses: azure/docker-login@v1
+        with:
+          login-server: contoso.azurecr.io
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+
+      - run: |
+          docker build . -t contoso.azurecr.io/nodejssampleapp:${{ github.sha }}
+          docker push contoso.azurecr.io/nodejssampleapp:${{ github.sha }}
+
+      - name: Azure logout
+        run: |
+          az logout
