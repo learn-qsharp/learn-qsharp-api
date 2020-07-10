@@ -1,41 +1,66 @@
-on: [push]
+name:  Continuous Deployment
+
+on:
+  push:
+    branches: [master, develop]
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
 
       - uses: Azure/docker-login@v1
         with:
-          login-server: contoso.azurecr.io
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          login-server: learnqsharpapi.azurecr.io
+          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
 
       - run: |
-          docker build . -t contoso.azurecr.io/k8sdemo:${{ github.sha }}
-          docker push contoso.azurecr.io/k8sdemo:${{ github.sha }}
+          docker build . -t learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
+          docker push learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
 
       # Set the target AKS cluster.
       - uses: Azure/aks-set-context@v1
+        if: github.ref == 'refs/heads/master'
         with:
           creds: '${{ secrets.AZURE_CREDENTIALS }}'
-          cluster-name: contoso
-          resource-group: contoso-rg
+          cluster-name: learn-qsharp-production
+          resource-group: learnQSharp
+
+      # Set the target AKS cluster.
+      - uses: Azure/aks-set-context@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: learn-qsharp-staging
+          resource-group: learnQSharp
 
       - uses: Azure/k8s-create-secret@v1
         with:
-          container-registry-url: contoso.azurecr.io
-          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
-          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          container-registry-url: learnqsharpapi.azurecr.io
+          container-registry-username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
           secret-name: demo-k8s-secret
 
       - uses: Azure/k8s-deploy@v1
+        if: github.ref == 'refs/heads/master'
         with:
           manifests: |
-            manifests/deployment.yml
-            manifests/service.yml
+            deployment-production.yml
           images: |
-            demo.azurecr.io/k8sdemo:${{ github.sha }}
+            learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
+          namespace: learn-qsharp-api
+          imagepullsecrets: |
+            demo-k8s-secret
+
+      - uses: Azure/k8s-deploy@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          manifests: |
+            deployment-staging.yml
+          images: |
+            learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
+          namespace: learn-qsharp-api
           imagepullsecrets: |
             demo-k8s-secret
