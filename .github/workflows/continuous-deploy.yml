@@ -49,8 +49,7 @@ jobs:
         with:
           namespace: learn-qsharp-api
           secret-type: 'generic'
-          db-username: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_USERNAME }}
-          db-password: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_PASSWORD }}
+          arguments:  --from-literal=db-username=${{ secrets.AZURE_PG_SERVER_STAG_ADM_USERNAME }} --from-literal=db-password=${{ secrets.AZURE_PG_SERVER_STAG_ADM_PASSWORD }}
           secret-name: db-secret
 
       - uses: Azure/k8s-deploy@v1
