@@ -42,7 +42,15 @@ jobs:
           container-registry-url: learnqsharpapi.azurecr.io
           container-registry-username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           container-registry-password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
-          secret-name: demo-k8s-secret
+          secret-name: container-registry-secret
+
+      - uses: Azure/k8s-create-secret@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          namespace: learn-qsharp-api
+          db-username: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_USERNAME }}
+          db-password: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_PASSWORD }}
+          secret-name: db-secret
 
       - uses: Azure/k8s-deploy@v1
         if: github.ref == 'refs/heads/master'
@@ -53,7 +61,7 @@ jobs:
             learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
           namespace: learn-qsharp-api
           imagepullsecrets: |
-            demo-k8s-secret
+            container-registry-secret
 
       - uses: Azure/k8s-deploy@v1
         if: github.ref == 'refs/heads/develop'
@@ -64,4 +72,5 @@ jobs:
             learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
           namespace: learn-qsharp-api
           imagepullsecrets: |
-            demo-k8s-secret
+            container-registry-secret
+            db-secret

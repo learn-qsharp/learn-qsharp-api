@@ -19,3 +19,25 @@ spec:
           image: learnqsharpapi.azurecr.io/learnqsharpapi:v1
           ports:
             - containerPort: 80
+          env:
+            - name: DB_HOST
+              value: "learn-qsharp-api-staging.postgres.database.azure.com"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "postgres"
+            - name: DB_USER
+              value: {db-username}
+            - name: DB_PASSWORD
+              value: {db-password}
+            - name: DB_SSLMODE
+              value: "require"
+
+            - name: GITHUB_IGNORE
+              value: "false"
+            - name: GITHUB_TUTORIALS_OWNER
+              value: "learn-qsharp"
+            - name: GITHUB_TUTORIALS_REPO
+              value: "learn-qsharp-tutorials"
+            - name: GITHUB_TUTORIALS_REF
+              value: "master"
