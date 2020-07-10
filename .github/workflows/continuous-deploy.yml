@@ -1,4 +1,4 @@
-name:  Continuous Deployment
+name: Continuous Deployment
 
 on:
   push:
@@ -38,6 +38,7 @@ jobs:
 
       - uses: Azure/k8s-create-secret@v1
         with:
+          namespace: learn-qsharp-api
           container-registry-url: learnqsharpapi.azurecr.io
           container-registry-username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
           container-registry-password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
