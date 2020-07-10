@@ -48,6 +48,7 @@ jobs:
         if: github.ref == 'refs/heads/develop'
         with:
           namespace: learn-qsharp-api
+          secret-type: 'generic'
           db-username: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_USERNAME }}
           db-password: ${{ secrets.AZURE_PG_SERVER_STAG_ADM_PASSWORD }}
           secret-name: db-secret
