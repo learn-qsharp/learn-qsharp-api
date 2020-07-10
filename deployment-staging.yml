@@ -32,9 +32,10 @@ spec:
                   name: db-secret
                   key: db-username
             - name: DB_PASSWORD
-              secretKeyRef:
-                name: db-secret
-                key: db-password
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-password
             - name: DB_SSLMODE
               value: "require"
 
