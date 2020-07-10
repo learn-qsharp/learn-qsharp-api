@@ -27,9 +27,9 @@ spec:
             - name: DB_NAME
               value: "postgres"
             - name: DB_USER
-              value: {db-username}
+              value: {{db-username}}
             - name: DB_PASSWORD
-              value: {db-password}
+              value: {{db-password}}
             - name: DB_SSLMODE
               value: "require"
 
