@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learn-qsharp-api-deployment
+  labels:
+    app: learn-qsharp-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learn-qsharp-api
+  template:
+    metadata:
+      labels:
+        app: learn-qsharp-api
+    spec:
+      containers:
+        - name: learnqsharpapi
+          image: learnqsharpapi.azurecr.io/learnqsharpapi:v1
+          ports:
+            - containerPort: 80
