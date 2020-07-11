@@ -10,11 +10,10 @@ jobs:
     steps:
       - uses: actions/checkout@master
 
-      - uses: Azure/docker-login@v1
-        with:
-          login-server: learnqsharpapi.azurecr.io
-          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+      - name: 'Login via Azure CLI'
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - run: |
           docker build . -t learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
