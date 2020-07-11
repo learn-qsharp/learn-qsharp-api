@@ -5,72 +5,23 @@ on:
     branches: [master, develop]
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@master
 
-      - uses: Azure/docker-login@v1
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
         with:
-          login-server: learnqsharpapi.azurecr.io
-          username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: 'Build and push image'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
       - run: |
-          docker build . -t learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
-          docker push learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
-
-      # Set the target AKS cluster.
-      - uses: Azure/aks-set-context@v1
-        if: github.ref == 'refs/heads/master'
-        with:
-          creds: '${{ secrets.AZURE_CREDENTIALS }}'
-          cluster-name: learn-qsharp-production
-          resource-group: learnQSharp
-
-      # Set the target AKS cluster.
-      - uses: Azure/aks-set-context@v1
-        if: github.ref == 'refs/heads/develop'
-        with:
-          creds: '${{ secrets.AZURE_CREDENTIALS }}'
-          cluster-name: learn-qsharp-staging
-          resource-group: learnQSharp
-
-      - uses: Azure/k8s-create-secret@v1
-        with:
-          namespace: learn-qsharp-api
-          container-registry-url: learnqsharpapi.azurecr.io
-          container-registry-username: ${{ secrets.AZURE_CONTAINER_REGISTRY_USERNAME }}
-          container-registry-password: ${{ secrets.AZURE_CONTAINER_REGISTRY_PASSWORD }}
-          secret-name: container-registry-secret
-
-      - uses: Azure/k8s-create-secret@v1
-        if: github.ref == 'refs/heads/develop'
-        with:
-          namespace: learn-qsharp-api
-          secret-type: 'generic'
-          arguments: --from-literal=db-username=${{ secrets.AZURE_PG_SERVER_STAG_ADM_USERNAME }} --from-literal=db-password=${{ secrets.AZURE_PG_SERVER_STAG_ADM_PASSWORD }}
-          secret-name: db-secret
-
-      - uses: Azure/k8s-deploy@v1
-        if: github.ref == 'refs/heads/master'
-        with:
-          manifests: |
-            deployment-production.yml
-          images: |
-            learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
-          namespace: learn-qsharp-api
-          imagepullsecrets: |
-            container-registry-secret
-
-      - uses: Azure/k8s-deploy@v1
-        if: github.ref == 'refs/heads/develop'
-        with:
-          manifests: |
-            deployment-staging.yml
-          images: |
-            learnqsharpapi.azurecr.io/learnqsharpapi:${{ github.sha }}
-          namespace: learn-qsharp-api
-          imagepullsecrets: |
-            container-registry-secret
-            db-secret
+          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/learn-qsharp-api:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/learn-qsharp-api:${{ github.sha }}
