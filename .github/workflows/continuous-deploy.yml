@@ -11,11 +11,6 @@ jobs:
       - name: 'Checkout GitHub Action'
         uses: actions/checkout@master
 
-      - name: 'Login via Azure CLI'
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
       - name: 'Build and push image'
         uses: azure/docker-login@v1
         with:
@@ -23,5 +18,54 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
       - run: |
-          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/learn-qsharp-api:${{ github.sha }}
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/learn-qsharp-api:${{ github.sha }}
+          docker build . -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AKS_NAMESPACE }}:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AKS_NAMESPACE }}:${{ github.sha }}
+
+      - uses: azure/aks-set-context@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: ${{ secrets.CLUSTER_NAME_PRODUCTION }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}
+
+      - uses: azure/aks-set-context@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+          cluster-name: ${{ secrets.CLUSTER_NAME_STAGING }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}
+
+      - uses: azure/k8s-create-secret@v1
+        with:
+          namespace: ${{ secrets.APP_NAMESPACE }}
+          container-registry-url: ${{ secrets.CONTAINER_REGISTRY }}
+          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          secret-name: ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
+
+      - uses: Azure/k8s-create-secret@v1
+        if: github.ref == 'refs/heads/master'
+        with:
+          namespace: ${{ secrets.APP_NAMESPACE }}
+          secret-type: 'generic'
+          arguments: --from-literal=db-username=${{ secrets.PG_PRODUCTION_USERNAME }} --from-literal=db-password=${{ secrets.PG_PRODUCTION_PASSWORD }}
+          secret-name: ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
+
+      - uses: Azure/k8s-create-secret@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          namespace: ${{ secrets.APP_NAMESPACE }}
+          secret-type: 'generic'
+          arguments: --from-literal=db-username=${{ secrets.PG_STAGING_USERNAME }} --from-literal=db-password=${{ secrets.PG_STAGING_PASSWORD }}
+          secret-name: ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
+
+      - uses: Azure/k8s-deploy@v1
+        with:
+          manifests: |
+            deployment.yml
+          images: |
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AKS_NAMESPACE }}:${{ github.sha }}
+          namespace: learn-qsharp-api
+          imagepullsecrets: |
+            ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
+            ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}

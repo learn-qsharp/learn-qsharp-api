@@ -20,6 +20,9 @@ spec:
           ports:
             - containerPort: 80
           env:
+            - name: PORT
+              value: "80"
+
             - name: DB_HOST
               value: "learn-qsharp-api-staging.postgres.database.azure.com"
             - name: DB_PORT
