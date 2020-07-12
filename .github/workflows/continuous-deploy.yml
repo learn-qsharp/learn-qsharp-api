@@ -65,7 +65,7 @@ jobs:
             deployment.yml
           images: |
             ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.REGISTRY_REPOSITORY }}:${{ github.sha }}
-          namespace: ${{ AKS_NAMESPACE }}
+          namespace: ${{ secrets.AKS_NAMESPACE }}
           imagepullsecrets: |
             ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
             ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
