@@ -15,16 +15,21 @@ spec:
         app: learn-qsharp-api
     spec:
       containers:
-        - name: learnqsharpapi
+        - name: learn-qsharp-api
           image: learnqsharp.azurecr.io/learn-qsharp-api:v1
           ports:
             - containerPort: 80
           env:
             - name: PORT
               value: "80"
+            - name: GIN_MODE
+              value: "debug"
 
             - name: DB_HOST
-              value: "learn-qsharp-api-staging.postgres.database.azure.com"
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-host
             - name: DB_PORT
               value: "5432"
             - name: DB_NAME

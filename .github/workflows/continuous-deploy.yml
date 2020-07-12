@@ -43,29 +43,46 @@ jobs:
           container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
           secret-name: ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
 
-      - uses: Azure/k8s-create-secret@v1
+      - name: 'Create Postgres connection secret for production'
+        uses: Azure/k8s-create-secret@v1
         if: github.ref == 'refs/heads/master'
         with:
           namespace: ${{ secrets.AKS_NAMESPACE }}
           secret-type: 'generic'
-          arguments: --from-literal=db-username=${{ secrets.PG_PRODUCTION_USERNAME }} --from-literal=db-password=${{ secrets.PG_PRODUCTION_PASSWORD }}
-          secret-name: ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
+          arguments: --from-literal=db-host=${{ secrets.PG_PRODUCTION_HOST }} --from-literal=db-username=${{ secrets.PG_PRODUCTION_USERNAME }} --from-literal=db-password=${{ secrets.PG_PRODUCTION_PASSWORD }}
+          secret-name: db-secret
 
-      - uses: Azure/k8s-create-secret@v1
+      - name: 'Create Postgres connection secret for staging'
+        uses: Azure/k8s-create-secret@v1
         if: github.ref == 'refs/heads/develop'
         with:
           namespace: ${{ secrets.AKS_NAMESPACE }}
           secret-type: 'generic'
-          arguments: --from-literal=db-username=${{ secrets.PG_STAGING_USERNAME }} --from-literal=db-password=${{ secrets.PG_STAGING_PASSWORD }}
-          secret-name: ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
+          arguments: --from-literal=db-host=${{ secrets.PG_STAGING_HOST }} --from-literal=db-username=${{ secrets.PG_STAGING_USERNAME }} --from-literal=db-password=${{ secrets.PG_STAGING_PASSWORD }}
+          secret-name: db-secret
 
-      - uses: Azure/k8s-deploy@v1
+      - name: 'Deploy on production'
+        uses: Azure/k8s-deploy@v1
+        if: github.ref == 'refs/heads/master'
         with:
           manifests: |
-            deployment.yml
+            deployment-production.yml
           images: |
             ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.REGISTRY_REPOSITORY }}:${{ github.sha }}
           namespace: ${{ secrets.AKS_NAMESPACE }}
           imagepullsecrets: |
             ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
-            ${{ secrets.PG_LOGIN_IMAGE_PULL_SECRET }}
+            db-secret
+
+      - name: 'Deploy on staging'
+        uses: Azure/k8s-deploy@v1
+        if: github.ref == 'refs/heads/develop'
+        with:
+          manifests: |
+            deployment-staging.yml
+          images: |
+            ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.REGISTRY_REPOSITORY }}:${{ github.sha }}
+          namespace: ${{ secrets.AKS_NAMESPACE }}
+          imagepullsecrets: |
+            ${{ secrets.REGISTRY_LOGIN_IMAGE_PULL_SECRET }}
+            db-secret
