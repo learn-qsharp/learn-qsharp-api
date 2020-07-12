@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: learnqsharpapi
-          image: learnqsharpapi.azurecr.io/learnqsharpapi:v1
+          image: learnqsharp.azurecr.io/learn-qsharp-api:v1
           ports:
             - containerPort: 80
           env:
