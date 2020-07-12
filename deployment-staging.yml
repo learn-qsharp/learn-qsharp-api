@@ -15,7 +15,43 @@ spec:
         app: learn-qsharp-api
     spec:
       containers:
-        - name: learnqsharpapi
-          image: learnqsharpapi.azurecr.io/learnqsharpapi:v1
+        - name: learn-qsharp-api
+          image: learnqsharp.azurecr.io/learn-qsharp-api:v1
           ports:
             - containerPort: 80
+          env:
+            - name: PORT
+              value: "80"
+            - name: GIN_MODE
+              value: "debug"
+
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-host
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "postgres"
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: db-password
+            - name: DB_SSLMODE
+              value: "require"
+
+            - name: GITHUB_IGNORE
+              value: "false"
+            - name: GITHUB_TUTORIALS_OWNER
+              value: "learn-qsharp"
+            - name: GITHUB_TUTORIALS_REPO
+              value: "learn-qsharp-tutorials"
+            - name: GITHUB_TUTORIALS_REF
+              value: "master"
