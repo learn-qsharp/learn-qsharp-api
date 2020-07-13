@@ -15,12 +15,26 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku container:login
 
-      - name: Build and push
+      - name: Build and push staging
+        if: github.ref == 'refs/heads/develop'
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku container:push --app learn-qsharp-api-staging web
 
-      - name: Deploy
+      - name: Build and push production
+        if: github.ref == 'refs/heads/master'
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:push --app learn-qsharp-api-production web
+
+      - name: Deploy staging
+        if: github.ref == 'refs/heads/develop'
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: heroku container:release --app learn-qsharp-api-staging web
+
+      - name: Deploy production
+        if: github.ref == 'refs/heads/master'
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: heroku container:release --app learn-qsharp-api-production web
