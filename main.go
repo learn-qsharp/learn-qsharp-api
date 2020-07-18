@@ -1,13 +1,10 @@
 package main
 
 import (
+	"context"
 	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
-	"github.com/learn-qsharp/learn-qsharp-api/github"
-	"github.com/learn-qsharp/learn-qsharp-api/router"
-	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
-	"os"
 )
 
 func main() {
@@ -17,9 +14,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dbc.Close()
+	defer dbc.Close(context.Background())
 
-	if os.Getenv("GITHUB_IGNORE") != "true" {
+	/*if os.Getenv("GITHUB_IGNORE") != "true" {
 		githubClient, githubCtx := github.Setup()
 
 		err = tutorials.LoadFromGithubAndSaveToDb(dbc, githubClient, githubCtx)
@@ -31,5 +28,5 @@ func main() {
 	err = router.Run(dbc)
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
 }
