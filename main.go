@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
+	"github.com/learn-qsharp/learn-qsharp-api/router"
 	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
 	"os"
@@ -29,8 +30,8 @@ func main() {
 		}
 	}
 
-	/*err = router.Run(dbc)
+	err = router.Run(dbc)
 	if err != nil {
 		log.Fatal(err)
-	}*/
+	}
 }

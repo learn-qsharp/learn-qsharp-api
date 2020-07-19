@@ -1,17 +1,19 @@
 package router
 
 import (
+	"context"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/jinzhu/gorm"
+	"github.com/jackc/pgx/v4"
 	"github.com/learn-qsharp/learn-qsharp-api/api"
 )
 
-func Run(db *gorm.DB) error {
+func Run(db *pgx.Conn) error {
 	r := gin.Default()
 	r.Use(cors.Default())
 	r.Use(func(c *gin.Context) {
 		c.Set("db", db)
+		c.Set("ctx", context.Background())
 		c.Next()
 	})
 
