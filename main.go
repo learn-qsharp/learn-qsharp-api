@@ -13,15 +13,14 @@ import (
 func main() {
 	_ = godotenv.Load()
 
-	dbc, err := db.SetupDB()
+	ctx := context.Background()
+	dbc, err := db.SetupDB(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dbc.Close(context.Background())
+	defer dbc.Close(ctx)
 
 	if os.Getenv("GITHUB_IGNORE") != "true" {
-		ctx := context.Background()
-
 		githubClient := github.Setup(ctx)
 
 		err = tutorials.LoadFromGithubAndSaveToDb(ctx, dbc, githubClient)

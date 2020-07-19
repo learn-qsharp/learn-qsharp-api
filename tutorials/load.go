@@ -170,26 +170,20 @@ func createOrUpdateTutorialOnDatabase(ctx context.Context, tx pgx.Tx, tutorial *
 		return errors.New("tutorial can't be nil")
 	}
 
-	/*searchTutorial := &models.Tutorial{
-		ID: tutorial.ID,
-	}*/
+	sql := `
+		INSERT INTO tutorials (id, title, credits, description, body, difficulty, tags)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			title = $2,
+			credits = $3,
+			description = $4,
+			body = $5,
+			difficulty = $6,
+			tags = $7
+`
 
-	/*if err := tx.First(searchTutorial).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			if err = tx.Create(tutorial).Error; err != nil {
-				return err
-			}
+	_, err := tx.Exec(ctx, sql, tutorial.ID, tutorial.Title, tutorial.Credits, tutorial.Description, tutorial.Body,
+		tutorial.Difficulty, tutorial.Tags)
 
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	// It will update only changed fields.
-	if err := tx.Model(searchTutorial).Updates(tutorial).Error; err != nil {
-		return err
-	}*/
-
-	return nil
+	return err
 }
