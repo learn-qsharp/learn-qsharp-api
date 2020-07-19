@@ -2,19 +2,15 @@ package models
 
 import (
 	"github.com/lib/pq"
-	"time"
 )
 
 type Tutorial struct {
-	ID        uint       `json:"id" gorm:"primary_key"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at" sql:"index"`
+	ID uint `json:"id,omitempty"`
 
-	Title       string         `json:"title" valid:"required"`
-	Credits     string         `json:"credits" valid:"required"`
-	Description string         `json:"description" valid:"required"`
-	Body        string         `json:"body" valid:"required"`
-	Difficulty  string         `json:"difficulty" valid:"required,in(easy|medium|hard)"`
-	Tags        pq.StringArray `json:"tags" gorm:"type:varchar(64)[]"`
+	Title       string         `json:"title,omitempty"`
+	Credits     string         `json:"credits,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Body        string         `json:"body,omitempty" `
+	Difficulty  string         `json:"difficulty,omitempty" `
+	Tags        pq.StringArray `json:"tags,omitempty"`
 }
