@@ -6,9 +6,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func Setup() (*github.Client, context.Context) {
-	ctx := context.Background()
+func Setup(ctx context.Context) *github.Client {
 	tc := oauth2.NewClient(ctx, nil)
 
-	return github.NewClient(tc), ctx
+	return github.NewClient(tc)
 }
