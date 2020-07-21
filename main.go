@@ -17,7 +17,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	dbc, err := db.SetupDB(ctx)
+	dbc, err := db.SetupDB(ctx, envVars)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,7 +26,7 @@ func main() {
 	if !envVars.GithubIgnore {
 		githubClient := github.Setup(ctx)
 
-		err = tutorials.LoadFromGithubAndSaveToDb(ctx, dbc, githubClient)
+		err = tutorials.LoadFromGithubAndSaveToDb(ctx, envVars, dbc, githubClient)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"github.com/google/go-github/v32/github"
 	"github.com/jackc/pgx/v4"
+	"github.com/learn-qsharp/learn-qsharp-api/env"
 	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"gopkg.in/yaml.v2"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -23,8 +23,8 @@ type metadata struct {
 	Tags        []string
 }
 
-func LoadFromGithubAndSaveToDb(ctx context.Context, db *pgx.Conn, client *github.Client) error {
-	tutorials, err := loadTutorials(client, ctx)
+func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
+	tutorials, err := loadTutorials(ctx, envVars, client)
 	if err != nil {
 		return err
 	}
@@ -42,20 +42,20 @@ func LoadFromGithubAndSaveToDb(ctx context.Context, db *pgx.Conn, client *github
 	return tx.Commit(ctx)
 }
 
-func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutorial, error) {
-	ids, err := getTutorialIDs(ctx, client)
+func loadTutorials(ctx context.Context, envVars env.Env, client *github.Client) ([]models.Tutorial, error) {
+	ids, err := getTutorialIDs(ctx, envVars, client)
 	if err != nil {
 		return nil, err
 	}
 
 	var tutorials []models.Tutorial
 	for _, id := range ids {
-		body, err := getTutorialBody(ctx, client, id)
+		body, err := getTutorialBody(ctx, envVars, client, id)
 		if err != nil {
 			return nil, err
 		}
 
-		metadata, err := getTutorialMetadata(ctx, client, id)
+		metadata, err := getTutorialMetadata(ctx, envVars, client, id)
 		if err != nil {
 			return nil, err
 		}
@@ -76,12 +76,12 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 	return tutorials, nil
 }
 
-func getTutorialIDs(ctx context.Context, client *github.Client) ([]uint, error) {
-	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
+func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client) ([]uint, error) {
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
-		os.Getenv("GITHUB_TUTORIALS_OWNER"),
-		os.Getenv("GITHUB_TUTORIALS_REPO"),
+		envVars.GithubTutorialsOwner,
+		envVars.GithubTutorialsRepo,
 		"tutorials", &opts,
 	)
 	if err != nil {
@@ -105,12 +105,12 @@ func getTutorialIDs(ctx context.Context, client *github.Client) ([]uint, error) 
 	return ids, nil
 }
 
-func getTutorialBody(ctx context.Context, client *github.Client, id uint) (string, error) {
-	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
+func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client, id uint) (string, error) {
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
-		os.Getenv("GITHUB_TUTORIALS_OWNER"),
-		os.Getenv("GITHUB_TUTORIALS_REPO"),
+		envVars.GithubTutorialsOwner,
+		envVars.GithubTutorialsRepo,
 		fmt.Sprintf("tutorials/%d/body.md", id),
 		&opts,
 	)
@@ -127,12 +127,12 @@ func getTutorialBody(ctx context.Context, client *github.Client, id uint) (strin
 	return buf.String(), nil
 }
 
-func getTutorialMetadata(ctx context.Context, client *github.Client, id uint) (*metadata, error) {
-	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
+func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*metadata, error) {
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
-		os.Getenv("GITHUB_TUTORIALS_OWNER"),
-		os.Getenv("GITHUB_TUTORIALS_REPO"),
+		envVars.GithubTutorialsOwner,
+		envVars.GithubTutorialsRepo,
 		fmt.Sprintf("tutorials/%d/metadata.yaml", id),
 		&opts,
 	)
