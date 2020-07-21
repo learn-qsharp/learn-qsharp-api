@@ -34,7 +34,7 @@ func ShowTutorial(c *gin.Context) {
 		&tutorial.Body, &tutorial.Difficulty, &tutorial.Tags)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			c.Status(http.StatusNotFound)
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		}
