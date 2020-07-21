@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/go-github/v32/github"
-	"github.com/jinzhu/gorm"
+	"github.com/jackc/pgx/v4"
 	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"gopkg.in/yaml.v2"
 	"io"
@@ -23,41 +23,39 @@ type metadata struct {
 	Tags        []string
 }
 
-func LoadFromGithubAndSaveToDb(db *gorm.DB, client *github.Client, ctx context.Context) error {
+func LoadFromGithubAndSaveToDb(ctx context.Context, db *pgx.Conn, client *github.Client) error {
 	tutorials, err := loadTutorials(client, ctx)
 	if err != nil {
 		return err
 	}
 
-	tx := db.Begin()
-	defer func() {
-		if r := recover(); r != nil {
-			tx.Rollback()
-		}
-	}()
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
 
-	if err = createOrUpdateTutorialsOnDatabase(tx, tutorials); err != nil {
-		tx.Rollback()
+	if err = createOrUpdateTutorialsOnDatabase(ctx, tx, tutorials); err != nil {
 		return err
 	}
 
-	return tx.Commit().Error
+	return tx.Commit(ctx)
 }
 
 func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutorial, error) {
-	ids, err := getTutorialIDs(client, ctx)
+	ids, err := getTutorialIDs(ctx, client)
 	if err != nil {
 		return nil, err
 	}
 
 	var tutorials []models.Tutorial
 	for _, id := range ids {
-		body, err := getTutorialBody(client, ctx, id)
+		body, err := getTutorialBody(ctx, client, id)
 		if err != nil {
 			return nil, err
 		}
 
-		metadata, err := getTutorialMetadata(client, ctx, id)
+		metadata, err := getTutorialMetadata(ctx, client, id)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +76,7 @@ func loadTutorials(client *github.Client, ctx context.Context) ([]models.Tutoria
 	return tutorials, nil
 }
 
-func getTutorialIDs(client *github.Client, ctx context.Context) ([]uint, error) {
+func getTutorialIDs(ctx context.Context, client *github.Client) ([]uint, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
@@ -107,7 +105,7 @@ func getTutorialIDs(client *github.Client, ctx context.Context) ([]uint, error) 
 	return ids, nil
 }
 
-func getTutorialBody(client *github.Client, ctx context.Context, id uint) (string, error) {
+func getTutorialBody(ctx context.Context, client *github.Client, id uint) (string, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
@@ -129,7 +127,7 @@ func getTutorialBody(client *github.Client, ctx context.Context, id uint) (strin
 	return buf.String(), nil
 }
 
-func getTutorialMetadata(client *github.Client, ctx context.Context, id uint) (*metadata, error) {
+func getTutorialMetadata(ctx context.Context, client *github.Client, id uint) (*metadata, error) {
 	opts := github.RepositoryContentGetOptions{Ref: os.Getenv("GITHUB_TUTORIALS_REF")}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
@@ -157,9 +155,9 @@ func getTutorialMetadata(client *github.Client, ctx context.Context, id uint) (*
 	return &metadata, nil
 }
 
-func createOrUpdateTutorialsOnDatabase(tx *gorm.DB, tutorials []models.Tutorial) error {
+func createOrUpdateTutorialsOnDatabase(ctx context.Context, tx pgx.Tx, tutorials []models.Tutorial) error {
 	for _, tutorial := range tutorials {
-		if err := createOrUpdateTutorialOnDatabase(tx, &tutorial); err != nil {
+		if err := createOrUpdateTutorialOnDatabase(ctx, tx, &tutorial); err != nil {
 			return err
 		}
 	}
@@ -167,31 +165,25 @@ func createOrUpdateTutorialsOnDatabase(tx *gorm.DB, tutorials []models.Tutorial)
 	return nil
 }
 
-func createOrUpdateTutorialOnDatabase(tx *gorm.DB, tutorial *models.Tutorial) error {
+func createOrUpdateTutorialOnDatabase(ctx context.Context, tx pgx.Tx, tutorial *models.Tutorial) error {
 	if tutorial == nil {
 		return errors.New("tutorial can't be nil")
 	}
 
-	searchTutorial := &models.Tutorial{
-		ID: tutorial.ID,
-	}
+	sql := `
+		INSERT INTO tutorials (id, title, credits, description, body, difficulty, tags)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (id) DO UPDATE SET
+			title = $2,
+			credits = $3,
+			description = $4,
+			body = $5,
+			difficulty = $6,
+			tags = $7
+`
 
-	if err := tx.First(searchTutorial).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
-			if err = tx.Create(tutorial).Error; err != nil {
-				return err
-			}
+	_, err := tx.Exec(ctx, sql, tutorial.ID, tutorial.Title, tutorial.Credits, tutorial.Description, tutorial.Body,
+		tutorial.Difficulty, tutorial.Tags)
 
-			return nil
-		} else {
-			return err
-		}
-	}
-
-	// It will update only changed fields.
-	if err := tx.Model(searchTutorial).Updates(tutorial).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
