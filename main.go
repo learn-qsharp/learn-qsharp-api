@@ -2,17 +2,19 @@ package main
 
 import (
 	"context"
-	"github.com/joho/godotenv"
 	"github.com/learn-qsharp/learn-qsharp-api/db"
+	"github.com/learn-qsharp/learn-qsharp-api/env"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
 	"github.com/learn-qsharp/learn-qsharp-api/router"
 	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
-	"os"
 )
 
 func main() {
-	_ = godotenv.Load()
+	envVars, err := env.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 	dbc, err := db.SetupDB(ctx)
@@ -21,7 +23,7 @@ func main() {
 	}
 	defer dbc.Close(ctx)
 
-	if os.Getenv("GITHUB_IGNORE") != "true" {
+	if !envVars.GithubIgnore {
 		githubClient := github.Setup(ctx)
 
 		err = tutorials.LoadFromGithubAndSaveToDb(ctx, dbc, githubClient)
