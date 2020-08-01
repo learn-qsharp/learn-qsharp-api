@@ -29,6 +29,11 @@ func main() {
 	}
 	defer pgxPool.Close()
 
+	err = db.Migrate(ctx, pgxConn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if !envVars.GithubIgnore {
 		githubClient := github.Setup(ctx)
 
