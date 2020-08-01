@@ -4,12 +4,13 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"net/http"
 )
 
 func ShowTutorial(c *gin.Context) {
-	db := c.MustGet("db").(*pgx.Conn)
+	db := c.MustGet("db").(*pgxpool.Pool)
 	ctx := c.MustGet("ctx").(context.Context)
 
 	type pathStruct struct {
@@ -46,7 +47,7 @@ func ShowTutorial(c *gin.Context) {
 }
 
 func ListTutorials(c *gin.Context) {
-	db := c.MustGet("db").(*pgx.Conn)
+	db := c.MustGet("db").(*pgxpool.Pool)
 	ctx := c.MustGet("ctx").(context.Context)
 
 	sql := `
