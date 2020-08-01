@@ -17,22 +17,28 @@ func main() {
 	}
 
 	ctx := context.Background()
-	dbc, err := db.SetupDB(ctx, envVars)
+	pgxConn, err := db.SetupPgxConn(ctx, envVars.DatabaseURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer dbc.Close(ctx)
+	defer pgxConn.Close(ctx)
+
+	pgxPool, err := db.SetupPgxPool(ctx, envVars.DatabaseURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pgxPool.Close()
 
 	if !envVars.GithubIgnore {
 		githubClient := github.Setup(ctx)
 
-		err = tutorials.LoadFromGithubAndSaveToDb(ctx, envVars, dbc, githubClient)
+		err = tutorials.LoadFromGithubAndSaveToDb(ctx, envVars, pgxConn, githubClient)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	err = router.Run(dbc)
+	err = router.Run(pgxPool)
 	if err != nil {
 		log.Fatal(err)
 	}

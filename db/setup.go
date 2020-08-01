@@ -3,30 +3,28 @@ package db
 import (
 	"context"
 	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/jackc/tern/migrate"
-	"github.com/learn-qsharp/learn-qsharp-api/env"
 )
 
-func SetupDB(ctx context.Context, envVars env.Env) (*pgx.Conn, error) {
-	conn, err := pgx.Connect(ctx, envVars.DatabaseURL)
+func Migrate(ctx context.Context, pgxConn *pgx.Conn) error {
+	m, err := migrate.NewMigrator(ctx, pgxConn, "schema_version")
 	if err != nil {
-		return nil, err
-	}
-
-	m, err := migrate.NewMigrator(ctx, conn, "schema_version")
-	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = m.LoadMigrations("migrations")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = m.Migrate(ctx)
-	if err != nil {
-		return nil, err
-	}
+	return m.Migrate(ctx)
+}
 
-	return conn, nil
+func SetupPgxConn(ctx context.Context, databaseURL string) (*pgx.Conn, error) {
+	return pgx.Connect(ctx, databaseURL)
+}
+
+func SetupPgxPool(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	return pgxpool.Connect(ctx, databaseURL)
 }
