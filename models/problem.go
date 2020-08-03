@@ -7,7 +7,8 @@ type Problem struct {
 
 	Name       string         `json:"name,omitempty"`
 	Credits    string         `json:"credits,omitempty"`
-	Body       string         `json:"body,omitempty" `
-	Difficulty string         `json:"difficulty,omitempty" `
+	Body       string         `json:"body,omitempty"`
+	Template   string         `json:"template,omitempty"`
+	Difficulty string         `json:"difficulty,omitempty"`
 	Tags       pq.StringArray `json:"tags,omitempty"`
 }
