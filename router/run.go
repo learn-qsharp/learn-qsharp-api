@@ -5,7 +5,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/learn-qsharp/learn-qsharp-api/api"
+	"github.com/learn-qsharp/learn-qsharp-api/handlers"
 )
 
 func Run(db *pgxpool.Pool) error {
@@ -23,8 +23,8 @@ func Run(db *pgxpool.Pool) error {
 		})
 	})
 
-	r.GET("/tutorials/:id", api.ShowTutorial)
-	r.GET("/tutorials", api.ListTutorials)
+	r.GET("/tutorials/:id", handlers.ShowTutorial)
+	r.GET("/tutorials", handlers.ListTutorials)
 
 	return r.Run()
 }
