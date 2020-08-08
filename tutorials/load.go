@@ -11,6 +11,7 @@ import (
 	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"gopkg.in/yaml.v2"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -24,7 +25,7 @@ type metadata struct {
 }
 
 func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
-	tutorials, err := loadTutorials(ctx, envVars, client)
+	hash, err := getLatestBranchSHA(ctx, envVars, client)
 	if err != nil {
 		return err
 	}
@@ -35,11 +36,72 @@ func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Con
 	}
 	defer tx.Rollback(ctx)
 
+	mustBeUpdated, err := mustBeUpdated(ctx, tx, hash)
+	if err != nil {
+		return err
+	}
+
+	if !mustBeUpdated {
+		log.Println("Table tutorials is up-to-date.")
+		return nil
+	}
+
+	tutorials, err := loadTutorials(ctx, envVars, client)
+	if err != nil {
+		return err
+	}
+
 	if err = createOrUpdateTutorialsOnDatabase(ctx, tx, tutorials); err != nil {
 		return err
 	}
 
+	err = upsertLatestHash(ctx, tx, hash)
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
+}
+
+func getLatestBranchSHA(ctx context.Context, envVars env.Env, client *github.Client) (string, error) {
+	branch, _, err := client.Repositories.GetBranch(ctx, envVars.GithubTutorialsOwner, envVars.GithubTutorialsRepo,
+		envVars.GithubTutorialsRef)
+	if err != nil {
+		return "", err
+	}
+	return branch.Commit.GetSHA(), nil
+}
+
+func mustBeUpdated(ctx context.Context, tx pgx.Tx, githubHash string) (bool, error) {
+	var dbHash string
+	err := tx.QueryRow(ctx, "SELECT hash FROM tutorials_hash WHERE id = 1").Scan(&dbHash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return true, nil
+		} else {
+			return true, err
+		}
+	}
+
+	if githubHash != dbHash {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func upsertLatestHash(ctx context.Context, tx pgx.Tx, githubHash string) error {
+	sql := `
+		INSERT INTO tutorials_hash
+		VALUES(1, $1)
+		ON CONFLICT (id)
+		DO
+			UPDATE SET hash = $1
+	`
+
+	_, err := tx.Exec(ctx, sql, githubHash)
+
+	return err
 }
 
 func loadTutorials(ctx context.Context, envVars env.Env, client *github.Client) ([]models.Tutorial, error) {

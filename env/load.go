@@ -8,7 +8,8 @@ import (
 type Env struct {
 	DatabaseURL string `env:"DATABASE_URL"`
 
-	GithubIgnore         bool   `env:"GITHUB_IGNORE"`
+	GithubBotToken string `env:"GITHUB_BOT_TOKEN"`
+
 	GithubTutorialsOwner string `env:"GITHUB_TUTORIALS_OWNER"`
 	GithubTutorialsRepo  string `env:"GITHUB_TUTORIALS_REPO"`
 	GithubTutorialsRef   string `env:"GITHUB_TUTORIALS_REF"`
