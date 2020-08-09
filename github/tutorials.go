@@ -25,7 +25,8 @@ type tutorialMetadata struct {
 }
 
 func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
-	hash, err := getLatestBranchSHA(ctx, envVars, client)
+	hash, err := getLatestBranchSHA(ctx, client, envVars.GithubTutorialsOwner, envVars.GithubTutorialsRepo,
+		envVars.GithubTutorialsBranch)
 	if err != nil {
 		return err
 	}
@@ -36,7 +37,7 @@ func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client 
 	}
 	defer tx.Rollback(ctx)
 
-	mustBeUpdated, err := mustBeUpdated(ctx, tx, hash)
+	mustBeUpdated, err := mustTutorialsBeUpdated(ctx, tx, hash)
 	if err != nil {
 		return err
 	}
@@ -63,16 +64,7 @@ func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client 
 	return tx.Commit(ctx)
 }
 
-func getLatestBranchSHA(ctx context.Context, envVars env.Env, client *github.Client) (string, error) {
-	branch, _, err := client.Repositories.GetBranch(ctx, envVars.GithubTutorialsOwner, envVars.GithubTutorialsRepo,
-		envVars.GithubTutorialsBranch)
-	if err != nil {
-		return "", err
-	}
-	return branch.Commit.GetSHA(), nil
-}
-
-func mustBeUpdated(ctx context.Context, tx pgx.Tx, githubHash string) (bool, error) {
+func mustTutorialsBeUpdated(ctx context.Context, tx pgx.Tx, githubHash string) (bool, error) {
 	var dbHash string
 	err := tx.QueryRow(ctx, "SELECT hash FROM tutorials_hash WHERE id = 1").Scan(&dbHash)
 	if err != nil {

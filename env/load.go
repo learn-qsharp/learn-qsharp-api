@@ -13,6 +13,10 @@ type Env struct {
 	GithubTutorialsOwner  string `env:"GITHUB_TUTORIALS_OWNER"`
 	GithubTutorialsRepo   string `env:"GITHUB_TUTORIALS_REPO"`
 	GithubTutorialsBranch string `env:"GITHUB_TUTORIALS_BRANCH"`
+
+	GithubProblemsOwner  string `env:"GITHUB_PROBLEMS_OWNER"`
+	GithubProblemsRepo   string `env:"GITHUB_PROBLEMS_REPO"`
+	GithubProblemsBranch string `env:"GITHUB_PROBLEMS_BRANCH"`
 }
 
 func Load() (Env, error) {
