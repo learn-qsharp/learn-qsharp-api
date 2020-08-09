@@ -10,9 +10,9 @@ type Env struct {
 
 	GithubBotToken string `env:"GITHUB_BOT_TOKEN"`
 
-	GithubTutorialsOwner string `env:"GITHUB_TUTORIALS_OWNER"`
-	GithubTutorialsRepo  string `env:"GITHUB_TUTORIALS_REPO"`
-	GithubTutorialsRef   string `env:"GITHUB_TUTORIALS_REF"`
+	GithubTutorialsOwner  string `env:"GITHUB_TUTORIALS_OWNER"`
+	GithubTutorialsRepo   string `env:"GITHUB_TUTORIALS_REPO"`
+	GithubTutorialsBranch string `env:"GITHUB_TUTORIALS_BRANCH"`
 }
 
 func Load() (Env, error) {

@@ -36,7 +36,7 @@ func main() {
 
 	githubClient := github.Setup(ctx, envVars)
 
-	err = tutorials.LoadFromGithubAndSaveToDb(ctx, envVars, pgxConn, githubClient)
+	err = tutorials.UpdateFromGitHub(ctx, envVars, pgxConn, githubClient)
 	if err != nil {
 		log.Fatal(err)
 	}

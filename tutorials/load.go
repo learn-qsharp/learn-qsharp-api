@@ -24,7 +24,7 @@ type metadata struct {
 	Tags        []string
 }
 
-func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
+func UpdateFromGitHub(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
 	hash, err := getLatestBranchSHA(ctx, envVars, client)
 	if err != nil {
 		return err
@@ -65,7 +65,7 @@ func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Con
 
 func getLatestBranchSHA(ctx context.Context, envVars env.Env, client *github.Client) (string, error) {
 	branch, _, err := client.Repositories.GetBranch(ctx, envVars.GithubTutorialsOwner, envVars.GithubTutorialsRepo,
-		envVars.GithubTutorialsRef)
+		envVars.GithubTutorialsBranch)
 	if err != nil {
 		return "", err
 	}
@@ -139,7 +139,7 @@ func loadTutorials(ctx context.Context, envVars env.Env, client *github.Client) 
 }
 
 func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client) ([]uint, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
@@ -168,7 +168,7 @@ func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client)
 }
 
 func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client, id uint) (string, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
@@ -190,7 +190,7 @@ func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client
 }
 
 func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*metadata, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
