@@ -6,7 +6,6 @@ import (
 	"github.com/learn-qsharp/learn-qsharp-api/env"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
 	"github.com/learn-qsharp/learn-qsharp-api/router"
-	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
 )
 
@@ -36,7 +35,7 @@ func main() {
 
 	githubClient := github.Setup(ctx, envVars)
 
-	err = tutorials.UpdateFromGitHub(ctx, envVars, pgxConn, githubClient)
+	err = github.UpdateTutorials(ctx, envVars, pgxConn, githubClient)
 	if err != nil {
 		log.Fatal(err)
 	}

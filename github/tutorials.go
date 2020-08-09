@@ -1,4 +1,4 @@
-package tutorials
+package github
 
 import (
 	"bytes"
@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-type metadata struct {
+type tutorialMetadata struct {
 	Title       string
 	Credits     string
 	Description string
@@ -24,7 +24,7 @@ type metadata struct {
 	Tags        []string
 }
 
-func UpdateFromGitHub(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
+func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
 	hash, err := getLatestBranchSHA(ctx, envVars, client)
 	if err != nil {
 		return err
@@ -189,7 +189,7 @@ func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client
 	return buf.String(), nil
 }
 
-func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*metadata, error) {
+func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*tutorialMetadata, error) {
 	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
@@ -208,7 +208,7 @@ func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Cl
 		return nil, err
 	}
 
-	metadata := metadata{}
+	metadata := tutorialMetadata{}
 	err = yaml.Unmarshal(buf.Bytes(), &metadata)
 	if err != nil {
 		return nil, err
