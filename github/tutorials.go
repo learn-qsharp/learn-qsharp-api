@@ -1,4 +1,4 @@
-package tutorials
+package github
 
 import (
 	"bytes"
@@ -11,11 +11,11 @@ import (
 	"github.com/learn-qsharp/learn-qsharp-api/models"
 	"gopkg.in/yaml.v2"
 	"io"
-	"strconv"
+	"log"
 	"strings"
 )
 
-type metadata struct {
+type tutorialMetadata struct {
 	Title       string
 	Credits     string
 	Description string
@@ -23,8 +23,9 @@ type metadata struct {
 	Tags        []string
 }
 
-func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
-	tutorials, err := loadTutorials(ctx, envVars, client)
+func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client *github.Client) error {
+	hash, err := getLatestBranchSHA(ctx, client, envVars.GithubTutorialsOwner, envVars.GithubTutorialsRepo,
+		envVars.GithubTutorialsBranch)
 	if err != nil {
 		return err
 	}
@@ -35,11 +36,63 @@ func LoadFromGithubAndSaveToDb(ctx context.Context, envVars env.Env, db *pgx.Con
 	}
 	defer tx.Rollback(ctx)
 
+	mustBeUpdated, err := mustTutorialsBeUpdated(ctx, tx, hash)
+	if err != nil {
+		return err
+	}
+
+	if !mustBeUpdated {
+		log.Println("Table tutorials is up-to-date.")
+		return nil
+	}
+
+	tutorials, err := loadTutorials(ctx, envVars, client)
+	if err != nil {
+		return err
+	}
+
 	if err = createOrUpdateTutorialsOnDatabase(ctx, tx, tutorials); err != nil {
 		return err
 	}
 
+	err = upsertLatestTutorialsHash(ctx, tx, hash)
+	if err != nil {
+		return err
+	}
+
 	return tx.Commit(ctx)
+}
+
+func mustTutorialsBeUpdated(ctx context.Context, tx pgx.Tx, githubHash string) (bool, error) {
+	var dbHash string
+	err := tx.QueryRow(ctx, "SELECT hash FROM tutorials_hash WHERE id = 1").Scan(&dbHash)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return true, nil
+		} else {
+			return true, err
+		}
+	}
+
+	if githubHash != dbHash {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func upsertLatestTutorialsHash(ctx context.Context, tx pgx.Tx, githubHash string) error {
+	sql := `
+		INSERT INTO tutorials_hash
+		VALUES(1, $1)
+		ON CONFLICT (id)
+		DO
+			UPDATE SET hash = $1
+	`
+
+	_, err := tx.Exec(ctx, sql, githubHash)
+
+	return err
 }
 
 func loadTutorials(ctx context.Context, envVars env.Env, client *github.Client) ([]models.Tutorial, error) {
@@ -77,7 +130,7 @@ func loadTutorials(ctx context.Context, envVars env.Env, client *github.Client) 
 }
 
 func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client) ([]uint, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	_, directories, _, err := client.Repositories.GetContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
@@ -88,25 +141,11 @@ func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client)
 		return nil, err
 	}
 
-	ids := make([]uint, 0)
-	for _, directory := range directories {
-		id, err := strconv.Atoi(directory.GetName())
-		if err != nil {
-			return nil, err
-		}
-
-		if id <= 0 {
-			return nil, errors.New("id must be positive")
-		}
-
-		ids = append(ids, uint(id))
-	}
-
-	return ids, nil
+	return getIDsFromDirectories(directories)
 }
 
 func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client, id uint) (string, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
@@ -127,8 +166,8 @@ func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client
 	return buf.String(), nil
 }
 
-func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*metadata, error) {
-	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsRef}
+func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Client, id uint) (*tutorialMetadata, error) {
+	opts := github.RepositoryContentGetOptions{Ref: envVars.GithubTutorialsBranch}
 	r, err := client.Repositories.DownloadContents(
 		ctx,
 		envVars.GithubTutorialsOwner,
@@ -146,7 +185,7 @@ func getTutorialMetadata(ctx context.Context, envVars env.Env, client *github.Cl
 		return nil, err
 	}
 
-	metadata := metadata{}
+	metadata := tutorialMetadata{}
 	err = yaml.Unmarshal(buf.Bytes(), &metadata)
 	if err != nil {
 		return nil, err
