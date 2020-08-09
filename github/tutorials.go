@@ -12,7 +12,6 @@ import (
 	"gopkg.in/yaml.v2"
 	"io"
 	"log"
-	"strconv"
 	"strings"
 )
 
@@ -56,7 +55,7 @@ func UpdateTutorials(ctx context.Context, envVars env.Env, db *pgx.Conn, client 
 		return err
 	}
 
-	err = upsertLatestHash(ctx, tx, hash)
+	err = upsertLatestTutorialsHash(ctx, tx, hash)
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func mustTutorialsBeUpdated(ctx context.Context, tx pgx.Tx, githubHash string) (
 	return false, nil
 }
 
-func upsertLatestHash(ctx context.Context, tx pgx.Tx, githubHash string) error {
+func upsertLatestTutorialsHash(ctx context.Context, tx pgx.Tx, githubHash string) error {
 	sql := `
 		INSERT INTO tutorials_hash
 		VALUES(1, $1)
@@ -142,21 +141,7 @@ func getTutorialIDs(ctx context.Context, envVars env.Env, client *github.Client)
 		return nil, err
 	}
 
-	ids := make([]uint, 0)
-	for _, directory := range directories {
-		id, err := strconv.Atoi(directory.GetName())
-		if err != nil {
-			return nil, err
-		}
-
-		if id <= 0 {
-			return nil, errors.New("id must be positive")
-		}
-
-		ids = append(ids, uint(id))
-	}
-
-	return ids, nil
+	return getIDsFromDirectories(directories)
 }
 
 func getTutorialBody(ctx context.Context, envVars env.Env, client *github.Client, id uint) (string, error) {

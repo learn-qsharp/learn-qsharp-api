@@ -40,6 +40,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = github.UpdateProblems(ctx, envVars, pgxConn, githubClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	err = router.Run(pgxPool)
 	if err != nil {
 		log.Fatal(err)
