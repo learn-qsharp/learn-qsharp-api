@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func ShowTutorial(c *gin.Context) {
+func ShowProblem(c *gin.Context) {
 	db := c.MustGet("db").(*pgxpool.Pool)
 	ctx := c.MustGet("ctx").(context.Context)
 
@@ -25,15 +25,15 @@ func ShowTutorial(c *gin.Context) {
 	}
 
 	sql := `
-		SELECT id, title, credits, description, body, difficulty, tags
-		FROM tutorials
-		WHERE tutorials.id = $1
+		SELECT id, name, credits, body, template, difficulty, tags
+		FROM problems
+		WHERE problems.id = $1
 	`
 
-	tutorial := models.Tutorial{}
+	problem := models.Problem{}
 
-	err := db.QueryRow(ctx, sql, path.ID).Scan(&tutorial.ID, &tutorial.Title, &tutorial.Credits, &tutorial.Description,
-		&tutorial.Body, &tutorial.Difficulty, &tutorial.Tags)
+	err := db.QueryRow(ctx, sql, path.ID).Scan(&problem.ID, &problem.Name, &problem.Credits,
+		&problem.Body, &problem.Template, &problem.Difficulty, &problem.Tags)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			c.Status(http.StatusNotFound)
@@ -44,16 +44,16 @@ func ShowTutorial(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, tutorial)
+	c.JSON(http.StatusOK, problem)
 }
 
-func ListTutorials(c *gin.Context) {
+func ListProblems(c *gin.Context) {
 	db := c.MustGet("db").(*pgxpool.Pool)
 	ctx := c.MustGet("ctx").(context.Context)
 
 	sql := `
-		SELECT id, title, description, difficulty, tags
-		FROM tutorials
+		SELECT id, name, difficulty, tags
+		FROM problems
 		ORDER BY id
 	`
 
@@ -63,19 +63,18 @@ func ListTutorials(c *gin.Context) {
 		return
 	}
 
-	tutorials := make([]models.Tutorial, 0)
+	problems := make([]models.Problem, 0)
 	for rows.Next() {
-		tutorial := models.Tutorial{}
+		problem := models.Problem{}
 
-		err := rows.Scan(&tutorial.ID, &tutorial.Title, &tutorial.Description, &tutorial.Difficulty,
-			&tutorial.Tags)
+		err := rows.Scan(&problem.ID, &problem.Name, &problem.Difficulty, &problem.Tags)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
 
-		tutorials = append(tutorials, tutorial)
+		problems = append(problems, problem)
 	}
 
-	c.JSON(http.StatusOK, tutorials)
+	c.JSON(http.StatusOK, problems)
 }

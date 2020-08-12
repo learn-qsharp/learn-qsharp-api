@@ -26,5 +26,8 @@ func Run(db *pgxpool.Pool) error {
 	r.GET("/tutorials/:id", handlers.ShowTutorial)
 	r.GET("/tutorials", handlers.ListTutorials)
 
+	r.GET("/problems/:id", handlers.ShowProblem)
+	r.GET("/problems", handlers.ListProblems)
+
 	return r.Run()
 }
