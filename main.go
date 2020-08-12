@@ -6,7 +6,6 @@ import (
 	"github.com/learn-qsharp/learn-qsharp-api/env"
 	"github.com/learn-qsharp/learn-qsharp-api/github"
 	"github.com/learn-qsharp/learn-qsharp-api/router"
-	"github.com/learn-qsharp/learn-qsharp-api/tutorials"
 	"log"
 )
 
@@ -29,13 +28,21 @@ func main() {
 	}
 	defer pgxPool.Close()
 
-	if !envVars.GithubIgnore {
-		githubClient := github.Setup(ctx)
+	err = db.Migrate(ctx, pgxConn)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		err = tutorials.LoadFromGithubAndSaveToDb(ctx, envVars, pgxConn, githubClient)
-		if err != nil {
-			log.Fatal(err)
-		}
+	githubClient := github.Setup(ctx, envVars)
+
+	err = github.UpdateTutorials(ctx, envVars, pgxConn, githubClient)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = github.UpdateProblems(ctx, envVars, pgxConn, githubClient)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	err = router.Run(pgxPool)

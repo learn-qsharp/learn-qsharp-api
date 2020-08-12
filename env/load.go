@@ -8,10 +8,15 @@ import (
 type Env struct {
 	DatabaseURL string `env:"DATABASE_URL"`
 
-	GithubIgnore         bool   `env:"GITHUB_IGNORE"`
-	GithubTutorialsOwner string `env:"GITHUB_TUTORIALS_OWNER"`
-	GithubTutorialsRepo  string `env:"GITHUB_TUTORIALS_REPO"`
-	GithubTutorialsRef   string `env:"GITHUB_TUTORIALS_REF"`
+	GithubBotToken string `env:"GITHUB_BOT_TOKEN"`
+
+	GithubTutorialsOwner  string `env:"GITHUB_TUTORIALS_OWNER"`
+	GithubTutorialsRepo   string `env:"GITHUB_TUTORIALS_REPO"`
+	GithubTutorialsBranch string `env:"GITHUB_TUTORIALS_BRANCH"`
+
+	GithubProblemsOwner  string `env:"GITHUB_PROBLEMS_OWNER"`
+	GithubProblemsRepo   string `env:"GITHUB_PROBLEMS_REPO"`
+	GithubProblemsBranch string `env:"GITHUB_PROBLEMS_BRANCH"`
 }
 
 func Load() (Env, error) {
